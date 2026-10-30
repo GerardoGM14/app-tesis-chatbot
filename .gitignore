@@ -1,0 +1,36 @@
+# Dependencias y builds
+node_modules/
+dist/
+build/
+*.exe
+/backend/bin/
+/wa-service/bin/
+
+# Cobertura y reportes
+coverage/
+coverage.out
+*.coverprofile
+.scannerwork/
+playwright-report/
+test-results/
+zap-report*/
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editor y sistema
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Insumos de la tesis (no van al repositorio)
+*.docx
+
+# Configuración personal de Claude Code (el contexto del proyecto en .claude/ sí se versiona)
+.claude/settings.local.json
