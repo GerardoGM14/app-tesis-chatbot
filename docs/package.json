@@ -1,0 +1,13 @@
+{
+  "name": "docs",
+  "private": true,
+  "type": "module",
+  "description": "Exporta los diagramas Mermaid de la documentación a SVG y PNG",
+  "scripts": {
+    "render": "node scripts/render.mjs svg",
+    "render:png": "node scripts/render.mjs png"
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "11.4.2"
+  }
+}
