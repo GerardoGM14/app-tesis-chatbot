@@ -1,0 +1,395 @@
+openapi: 3.1.0
+info:
+  title: Plataforma de atención multitenant · API
+  version: 0.1.0
+  description: |
+    API del backend. Todas las rutas de negocio exigen un access token (Bearer)
+    y verifican el permiso del rol. El tenant siempre se toma del token, nunca
+    del cuerpo ni de la URL.
+servers:
+  - url: /api/v1
+tags:
+  - name: auth
+  - name: empresas
+  - name: usuarios
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: rt
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, examples: [credenciales_invalidas] }
+            message: { type: string }
+            fields:
+              type: object
+              additionalProperties: { type: string }
+            requestId: { type: string }
+
+    Role:
+      type: string
+      enum: [superadmin, admin_empresa, agente]
+
+    SessionUser:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        email: { type: string, format: email }
+        rol: { $ref: '#/components/schemas/Role' }
+        permisos: { type: array, items: { type: string } }
+        tenantId: { type: [string, 'null'], format: uuid }
+        tenantNombre: { type: string }
+        debeCambiarPassword: { type: boolean }
+
+    Session:
+      type: object
+      properties:
+        accessToken: { type: string }
+        expiresIn: { type: integer, description: Segundos de vida del access token }
+        user: { $ref: '#/components/schemas/SessionUser' }
+
+    Tenant:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        ruc: { type: string, pattern: '^\d{11}$' }
+        slug: { type: string }
+        estado: { type: string, enum: [activo, suspendido] }
+        usuarios: { type: integer }
+        creadoEn: { type: string, format: date-time }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        tenantId: { type: string, format: uuid }
+        nombre: { type: string }
+        email: { type: string, format: email }
+        rol: { $ref: '#/components/schemas/Role' }
+        activo: { type: boolean }
+        debeCambiarPassword: { type: boolean }
+        ultimoAcceso: { type: [string, 'null'], format: date-time }
+        creadoEn: { type: string, format: date-time }
+
+    TemporaryPassword:
+      type: object
+      properties:
+        passwordTemporal: { type: string, description: Se muestra una sola vez }
+
+  responses:
+    Unauthorized:
+      description: Sin sesión o token inválido
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: El rol no tiene permiso, la empresa está suspendida o hay un cambio de contraseña pendiente
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: No existe o no pertenece a la empresa del usuario
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Invalid:
+      description: Datos inválidos
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Conflict:
+      description: Dato duplicado
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    TooMany:
+      description: Límite de peticiones superado
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+security:
+  - bearer: []
+
+paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Inicia sesión
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              additionalProperties: false
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, maxLength: 128 }
+      responses:
+        '200':
+          description: Sesión abierta; deja la cookie httpOnly `rt`
+          content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/Invalid' }
+        '429': { $ref: '#/components/responses/TooMany' }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Rota el refresh token y emite un access token nuevo
+      security: [{ refreshCookie: [] }]
+      responses:
+        '200':
+          description: Sesión renovada
+          content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooMany' }
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Cierra la sesión actual
+      security: [{ refreshCookie: [] }]
+      responses:
+        '204': { description: Sesión cerrada }
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Datos del usuario autenticado
+      responses:
+        '200':
+          description: Usuario
+          content: { application/json: { schema: { $ref: '#/components/schemas/SessionUser' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/password:
+    post:
+      tags: [auth]
+      summary: Cambia la contraseña y cierra las demás sesiones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actual, nueva]
+              additionalProperties: false
+              properties:
+                actual: { type: string }
+                nueva: { type: string, minLength: 10, maxLength: 128 }
+      responses:
+        '200':
+          description: Nueva sesión
+          content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/Invalid' }
+
+  /empresas:
+    get:
+      tags: [empresas]
+      summary: Lista las empresas (superadmin)
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 120 }
+      responses:
+        '200':
+          description: Empresas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Tenant' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [empresas]
+      summary: Da de alta una empresa con su primer administrador (superadmin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, ruc, adminNombre, adminEmail]
+              additionalProperties: false
+              properties:
+                nombre: { type: string, minLength: 2, maxLength: 120 }
+                ruc: { type: string, pattern: '^\d{11}$' }
+                adminNombre: { type: string, minLength: 2, maxLength: 120 }
+                adminEmail: { type: string, format: email }
+      responses:
+        '201':
+          description: Empresa creada con la contraseña temporal del administrador
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  empresa: { $ref: '#/components/schemas/Tenant' }
+                  adminEmail: { type: string }
+                  passwordTemporal: { type: string }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+
+  /empresas/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get:
+      tags: [empresas]
+      summary: Detalle de una empresa (superadmin)
+      responses:
+        '200':
+          description: Empresa
+          content: { application/json: { schema: { $ref: '#/components/schemas/Tenant' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [empresas]
+      summary: Cambia el nombre de la empresa (superadmin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre]
+              additionalProperties: false
+              properties:
+                nombre: { type: string, minLength: 2, maxLength: 120 }
+      responses:
+        '200':
+          description: Empresa actualizada
+          content: { application/json: { schema: { $ref: '#/components/schemas/Tenant' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
+
+  /empresas/{id}/suspender:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post:
+      tags: [empresas]
+      summary: Suspende la empresa y cierra las sesiones de sus usuarios (superadmin)
+      responses:
+        '200':
+          description: Empresa suspendida
+          content: { application/json: { schema: { $ref: '#/components/schemas/Tenant' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /empresas/{id}/reactivar:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post:
+      tags: [empresas]
+      summary: Reactiva la empresa (superadmin)
+      responses:
+        '200':
+          description: Empresa activa
+          content: { application/json: { schema: { $ref: '#/components/schemas/Tenant' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /empresas/{id}/administradores:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get:
+      tags: [empresas]
+      summary: Administradores de una empresa (superadmin)
+      responses:
+        '200':
+          description: Administradores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/User' } }
+
+  /usuarios:
+    get:
+      tags: [usuarios]
+      summary: Usuarios de la empresa (admin_empresa)
+      responses:
+        '200':
+          description: Usuarios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/User' } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [usuarios]
+      summary: Crea un usuario con contraseña temporal (admin_empresa)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, email, rol]
+              additionalProperties: false
+              properties:
+                nombre: { type: string, minLength: 2, maxLength: 120 }
+                email: { type: string, format: email }
+                rol: { type: string, enum: [admin_empresa, agente] }
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario: { $ref: '#/components/schemas/User' }
+                  passwordTemporal: { type: string }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Invalid' }
+
+  /usuarios/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch:
+      tags: [usuarios]
+      summary: Cambia nombre, rol o estado (admin_empresa)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                nombre: { type: string, minLength: 2, maxLength: 120 }
+                rol: { type: string, enum: [admin_empresa, agente] }
+                activo: { type: boolean }
+      responses:
+        '200':
+          description: Usuario actualizado
+          content: { application/json: { schema: { $ref: '#/components/schemas/User' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Invalid' }
+
+  /usuarios/{id}/restablecer:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post:
+      tags: [usuarios]
+      summary: Genera una contraseña temporal (admin a sus agentes, superadmin a administradores)
+      responses:
+        '200':
+          description: Contraseña temporal
+          content: { application/json: { schema: { $ref: '#/components/schemas/TemporaryPassword' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
