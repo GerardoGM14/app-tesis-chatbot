@@ -1,0 +1,83 @@
+@import 'tailwindcss';
+
+/*
+ * Tokens del sistema de diseño (docs/05-diseno/sistema-de-diseno.md).
+ * Colores de marca tomados del logo: azul #1834BC y naranja #EB6B1D.
+ * Regla: sin sombras externas ni degradados; la jerarquía se marca con bordes,
+ * espacio y peso tipográfico.
+ */
+@theme {
+  --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Sora Variable', 'Poppins', ui-sans-serif, sans-serif;
+
+  --color-brand-50: #eef1fc;
+  --color-brand-100: #dce2f8;
+  --color-brand-200: #b6c2f0;
+  --color-brand-500: #2e49d0;
+  --color-brand-600: #1834bc;
+  --color-brand-700: #142a97;
+  --color-brand-800: #102274;
+  --color-brand-900: #0c1a57;
+
+  --color-accent-50: #fdf1e9;
+  --color-accent-500: #eb6b1d;
+  --color-accent-600: #c75613;
+
+  --color-canvas: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-line: #e4e6eb;
+  --color-line-strong: #c9cdd6;
+  --color-ink: #0f1219;
+  --color-ink-muted: #4b5263;
+  --color-ink-subtle: #7a8191;
+
+  --color-success-50: #ecf7f0;
+  --color-success-600: #16803c;
+  --color-danger-50: #fcedec;
+  --color-danger-600: #c8312b;
+
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
+
+  @keyframes shimmer {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans text-sm antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-ink;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+
+  dialog::backdrop {
+    background: rgb(15 18 25 / 0.45);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
