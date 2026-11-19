@@ -1,0 +1,82 @@
+# Entorno local completo. Uso:
+#   cp .env.example .env
+#   docker compose up --build
+#   docker compose run --rm migrate seed-demo   # datos de demostración (opcional)
+# Panel: http://localhost:8080
+
+name: plataforma-local
+
+x-hardening: &hardening
+  read_only: true
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build: ./backend
+    command: ["migrate"]
+    environment:
+      APP_ENV: development
+      MIGRATION_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    <<: *hardening
+
+  backend:
+    build: ./backend
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgres://plataforma_app:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_SECURE: "false"
+      TRUST_PROXY: "true"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:8000:8000"
+    <<: *hardening
+
+  wa-service:
+    build: ./wa-service
+    environment:
+      INTERNAL_HMAC_SECRET: ${INTERNAL_HMAC_SECRET}
+    <<: *hardening
+
+  frontend:
+    build: ./frontend
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+
+  caddy:
+    image: caddy:2-alpine
+    volumes:
+      - ./deploy/caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on: [backend, frontend]
+
+volumes:
+  pgdata:

@@ -1,0 +1,16 @@
+# Entorno local: mismo enrutamiento que producción, sin TLS.
+:80 {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy backend:8000 {
+			# Solo Caddy define la IP del cliente: se descartan cabeceras que el cliente podría falsificar.
+			header_up -X-Real-IP
+			header_up -True-Client-IP
+		}
+	}
+
+	handle {
+		reverse_proxy frontend:8080
+	}
+}
