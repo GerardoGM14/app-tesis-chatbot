@@ -1,0 +1,15 @@
+title = "gitleaks · plataforma de atención"
+
+[extend]
+useDefault = true
+
+# Datos ficticios de pruebas y plantillas de configuración sin secretos reales.
+[allowlist]
+description = "Pruebas y plantillas"
+paths = [
+  '''.*_test\.go$''',
+  '''.*\.test\.tsx?$''',
+  '''frontend/src/test/.*''',
+  '''\.env\.example$''',
+  '''deploy/env\.example$''',
+]
