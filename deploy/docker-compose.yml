@@ -1,0 +1,85 @@
+# Despliegue de un entorno (staging o production) en el VPS con imágenes de GHCR.
+# Lo ejecuta deploy/scripts/deploy.sh; las variables vienen de /opt/plataforma/<entorno>.env
+name: plataforma-${ENV_NAME:?}
+
+x-hardening: &hardening
+  read_only: true
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  restart: unless-stopped
+
+x-image: &backend-image ghcr.io/${GHCR_OWNER:?}/plataforma-backend:${IMAGE_TAG:?}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [internal]
+
+  # Se ejecuta aparte (docker compose run --rm migrate) antes de actualizar los servicios.
+  migrate:
+    image: *backend-image
+    profiles: [tools]
+    command: ["migrate"]
+    environment:
+      APP_ENV: production
+      MIGRATION_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?}
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
+    networks: [internal]
+    <<: *hardening
+    restart: "no"
+
+  backend:
+    image: *backend-image
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgres://plataforma_app:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:?}
+      COOKIE_SECURE: "true"
+      TRUST_PROXY: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      internal: {}
+      edge:
+        aliases: ["${ENV_NAME}-backend"]
+    <<: *hardening
+
+  wa-service:
+    image: ghcr.io/${GHCR_OWNER}/plataforma-wa-service:${IMAGE_TAG}
+    environment:
+      INTERNAL_HMAC_SECRET: ${INTERNAL_HMAC_SECRET:?}
+    networks: [internal]
+    <<: *hardening
+
+  frontend:
+    image: ghcr.io/${GHCR_OWNER}/plataforma-frontend:${IMAGE_TAG}
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    networks:
+      edge:
+        aliases: ["${ENV_NAME}-frontend"]
+
+networks:
+  internal: {}
+  edge:
+    external: true
+
+volumes:
+  pgdata:

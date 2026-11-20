@@ -1,0 +1,46 @@
+# Proxy de borde del VPS. Termina TLS (Let's Encrypt automático) y enruta por dominio
+# hacia los proyectos compose de staging y producción, y hacia SonarQube.
+{
+	email {$ACME_EMAIL}
+}
+
+(seguridad) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	encode zstd gzip
+}
+
+(api) {
+	reverse_proxy {args[0]}:8000 {
+		# Solo Caddy define la IP del cliente: se descartan cabeceras que el cliente podría falsificar.
+		header_up -X-Real-IP
+		header_up -True-Client-IP
+	}
+}
+
+{$PROD_DOMAIN} {
+	import seguridad
+	handle /api/* {
+		import api production-backend
+	}
+	handle {
+		reverse_proxy production-frontend:8080
+	}
+}
+
+{$STAGING_DOMAIN} {
+	import seguridad
+	handle /api/* {
+		import api staging-backend
+	}
+	handle {
+		reverse_proxy staging-frontend:8080
+	}
+}
+
+{$SONAR_DOMAIN} {
+	import seguridad
+	reverse_proxy sonarqube:9000
+}

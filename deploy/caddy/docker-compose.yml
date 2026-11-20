@@ -1,0 +1,31 @@
+# Caddy compartido por staging, producción y SonarQube. Se levanta una sola vez:
+#   docker network create edge
+#   docker compose --env-file /opt/plataforma/caddy.env up -d
+name: edge
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?}
+      PROD_DOMAIN: ${PROD_DOMAIN:?}
+      STAGING_DOMAIN: ${STAGING_DOMAIN:?}
+      SONAR_DOMAIN: ${SONAR_DOMAIN:?}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  caddy_data:
+  caddy_config:

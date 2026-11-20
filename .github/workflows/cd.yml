@@ -1,0 +1,85 @@
+# Despliegue continuo en el VPS con el runner self-hosted.
+# Solo se dispara cuando CI termina bien en main: los pull requests (incluidos
+# los de forks) nunca ejecutan código en el VPS.
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: cd-main
+  cancel-in-progress: false
+
+env:
+  IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+
+jobs:
+  deploy-staging:
+    name: Deploy · staging
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: [self-hosted, linux, vps]
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Acceso a GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Desplegar
+        run: bash deploy/scripts/deploy.sh staging "$IMAGE_TAG"
+
+  qa-staging:
+    name: QA · OWASP ZAP sobre staging
+    needs: deploy-staging
+    runs-on: [self-hosted, linux, vps]
+    env:
+      TARGET: ${{ vars.STAGING_URL }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Preparar carpeta de reportes
+        run: mkdir -p zap-report && chmod 777 zap-report
+      - name: ZAP baseline (frontend y cabeceras)
+        run: >
+          docker run --rm --network host -v "$PWD/.zap:/zap/config:ro" -v "$PWD/zap-report:/zap/wrk:rw"
+          ghcr.io/zaproxy/zaproxy:stable zap-baseline.py
+          -t "$TARGET" -c /zap/config/rules.tsv -r baseline.html -J baseline.json
+      - name: ZAP API scan (OpenAPI del backend)
+        run: >
+          docker run --rm --network host -v "$PWD/backend/api:/zap/api:ro" -v "$PWD/.zap:/zap/config:ro"
+          -v "$PWD/zap-report:/zap/wrk:rw"
+          ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py
+          -t /zap/api/openapi.yaml -f openapi -O "$TARGET/api/v1" -c /zap/config/rules.tsv
+          -r api.html -J api.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report-${{ env.IMAGE_TAG }}
+          path: zap-report
+
+  deploy-production:
+    name: Deploy · producción
+    needs: qa-staging
+    runs-on: [self-hosted, linux, vps]
+    # Configura revisores obligatorios en Settings > Environments > production.
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Acceso a GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Desplegar
+        run: bash deploy/scripts/deploy.sh production "$IMAGE_TAG"
