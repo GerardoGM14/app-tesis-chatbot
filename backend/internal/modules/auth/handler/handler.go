@@ -140,6 +140,8 @@ func (h *Handler) changePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) writeSession(w http.ResponseWriter, s domain.Session) {
+	//nolint:gosec // Secure sale de la configuración, que solo permite false en development
+	// nosemgrep: go.lang.security.audit.net.cookie-missing-secure.cookie-missing-secure
 	http.SetCookie(w, &http.Cookie{
 		Name: refreshCookie, Value: s.RefreshToken, Path: cookiePath,
 		Expires: s.RefreshExpiresAt, MaxAge: int(time.Until(s.RefreshExpiresAt).Seconds()),
@@ -151,6 +153,8 @@ func (h *Handler) writeSession(w http.ResponseWriter, s domain.Session) {
 }
 
 func (h *Handler) clearCookie(w http.ResponseWriter) {
+	//nolint:gosec // Secure sale de la configuración, que solo permite false en development
+	// nosemgrep: go.lang.security.audit.net.cookie-missing-secure.cookie-missing-secure
 	http.SetCookie(w, &http.Cookie{
 		Name: refreshCookie, Value: "", Path: cookiePath, MaxAge: -1,
 		HttpOnly: true, Secure: h.cookieSecure, SameSite: http.SameSiteStrictMode,

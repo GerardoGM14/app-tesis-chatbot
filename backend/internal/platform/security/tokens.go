@@ -13,7 +13,7 @@ import (
 	"backend/internal/platform/authz"
 )
 
-const tokenIssuer = "plataforma-atencion"
+const jwtIssuer = "plataforma-atencion"
 
 // ErrInvalidToken indica un access token inválido o expirado.
 var ErrInvalidToken = errors.New("token inválido")
@@ -43,7 +43,7 @@ func (m *TokenManager) Issue(p authz.Principal) (string, time.Duration, error) {
 	claims := accessClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   p.UserID.String(),
-			Issuer:    tokenIssuer,
+			Issuer:    jwtIssuer,
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(m.ttl)),
 			ID:        uuid.NewString(),
@@ -62,7 +62,7 @@ func (m *TokenManager) Issue(p authz.Principal) (string, time.Duration, error) {
 func (m *TokenManager) Parse(token string) (authz.Principal, error) {
 	parser := jwt.NewParser(
 		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
-		jwt.WithIssuer(tokenIssuer),
+		jwt.WithIssuer(jwtIssuer),
 		jwt.WithExpirationRequired(),
 		jwt.WithTimeFunc(m.now),
 	)

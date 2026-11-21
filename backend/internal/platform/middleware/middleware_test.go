@@ -148,8 +148,10 @@ func TestRateLimiter(t *testing.T) {
 	clock := time.Now()
 	l.now = func() time.Time { return clock }
 
-	if !l.Allow("1.1.1.1") || !l.Allow("1.1.1.1") {
-		t.Fatal("la ráfaga inicial debe permitirse")
+	for range 2 {
+		if !l.Allow("1.1.1.1") {
+			t.Fatal("la ráfaga inicial debe permitirse")
+		}
 	}
 	if l.Allow("1.1.1.1") {
 		t.Error("la tercera petición inmediata debe bloquearse")

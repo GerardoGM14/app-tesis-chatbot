@@ -135,9 +135,9 @@ func TestParseRejectsInvalidTokens(t *testing.T) {
 	none := jwt.NewWithClaims(jwt.SigningMethodNone, jwt.MapClaims{"sub": uuid.NewString(), "rol": "superadmin"})
 	noneToken, _ := none.SignedString(jwt.UnsafeAllowNoneSignatureType)
 
-	badRole := signRaw(t, jwt.MapClaims{"sub": uuid.NewString(), "rol": "root", "iss": tokenIssuer, "exp": time.Now().Add(time.Minute).Unix()})
-	badSubject := signRaw(t, jwt.MapClaims{"sub": "x", "rol": "agente", "iss": tokenIssuer, "exp": time.Now().Add(time.Minute).Unix()})
-	missingTenant := signRaw(t, jwt.MapClaims{"sub": uuid.NewString(), "rol": "agente", "iss": tokenIssuer, "exp": time.Now().Add(time.Minute).Unix()})
+	badRole := signRaw(t, jwt.MapClaims{"sub": uuid.NewString(), "rol": "root", "iss": jwtIssuer, "exp": time.Now().Add(time.Minute).Unix()})
+	badSubject := signRaw(t, jwt.MapClaims{"sub": "x", "rol": "agente", "iss": jwtIssuer, "exp": time.Now().Add(time.Minute).Unix()})
+	missingTenant := signRaw(t, jwt.MapClaims{"sub": uuid.NewString(), "rol": "agente", "iss": jwtIssuer, "exp": time.Now().Add(time.Minute).Unix()})
 
 	invalid := map[string]string{
 		"vacío":             "",

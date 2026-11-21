@@ -244,24 +244,10 @@ func (s *Service) ChangePassword(ctx context.Context, p authz.Principal, current
 		if err != nil {
 			return err
 		}
-		if !s.hasher.Verify(user.PasswordHash, current) {
-			return domain.ErrWrongPassword
-		}
-		if current == next {
-			return domain.ErrSamePassword
-		}
-		if msg := security.CheckPasswordPolicy(next, user.Email); msg != "" {
-			return apperr.Validation(map[string]string{"nueva": msg})
-		}
-
-		hash, err := s.hasher.Hash(next)
-		if err != nil {
+		if err := s.checkNewPassword(user, current, next); err != nil {
 			return err
 		}
-		if err := s.repo.UpdatePassword(ctx, q, user.ID, hash, false); err != nil {
-			return err
-		}
-		if err := s.repo.RevokeAllForUser(ctx, q, user.ID); err != nil {
+		if err := s.replacePassword(ctx, q, user.ID, next); err != nil {
 			return err
 		}
 		user.DebeCambiarPassword = false
@@ -271,6 +257,32 @@ func (s *Service) ChangePassword(ctx context.Context, p authz.Principal, current
 		return s.audit.Record(ctx, q, audit.Entry{TenantID: user.TenantID, UserID: user.ID, Action: audit.ActionPasswordChanged})
 	})
 	return session, err
+}
+
+// checkNewPassword verifica la contraseña actual y que la nueva sea aceptable.
+func (s *Service) checkNewPassword(user domain.User, current, next string) error {
+	if !s.hasher.Verify(user.PasswordHash, current) {
+		return domain.ErrWrongPassword
+	}
+	if current == next {
+		return domain.ErrSamePassword
+	}
+	if msg := security.CheckPasswordPolicy(next, user.Email); msg != "" {
+		return apperr.Validation(map[string]string{"nueva": msg})
+	}
+	return nil
+}
+
+// replacePassword guarda la nueva contraseña y cierra las sesiones del usuario.
+func (s *Service) replacePassword(ctx context.Context, q database.Querier, userID uuid.UUID, next string) error {
+	hash, err := s.hasher.Hash(next)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.UpdatePassword(ctx, q, userID, hash, false); err != nil {
+		return err
+	}
+	return s.repo.RevokeAllForUser(ctx, q, userID)
 }
 
 func (s *Service) openSession(ctx context.Context, q database.Querier, user domain.User, family uuid.UUID) (domain.Session, error) {
