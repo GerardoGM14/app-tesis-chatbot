@@ -46,7 +46,7 @@ type Options struct {
 	Argon2 security.Argon2Params
 	// TenantCacheTTL es cuánto se recuerda el estado de una empresa. Por defecto 30s.
 	TenantCacheTTL time.Duration
-	// DisableRateLimit desactiva el límite global (las pruebas hacen muchas peticiones).
+	// DisableRateLimit desactiva los límites global y de login (las pruebas hacen muchas peticiones).
 	DisableRateLimit bool
 }
 
@@ -71,17 +71,13 @@ func New(cfg config.Config, db DB, logger *slog.Logger, opts Options) (http.Hand
 	tenantSvc := tenantservice.New(db, tenantrepo.Postgres{}, userSvc, authRepository, auditor)
 
 	authenticate := mw.Authenticate(tokens)
-	loginLimiter := mw.NewRateLimiter(10, 10)
-	globalLimiter := mw.NewRateLimiter(300, 60)
+	limitLogin, limitGlobal := rateLimits(opts.DisableRateLimit)
 
 	r := chi.NewRouter()
 	if cfg.TrustProxy {
 		r.Use(chimw.RealIP)
 	}
-	r.Use(chimw.RequestID, reqmeta.Middleware, mw.RequestLogger(logger), chimw.Recoverer, mw.SecureHeaders)
-	if !opts.DisableRateLimit {
-		r.Use(globalLimiter.Middleware)
-	}
+	r.Use(chimw.RequestID, reqmeta.Middleware, mw.RequestLogger(logger), chimw.Recoverer, mw.SecureHeaders, limitGlobal)
 
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		httpx.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
@@ -98,7 +94,7 @@ func New(cfg config.Config, db DB, logger *slog.Logger, opts Options) (http.Hand
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
-			authhandler.New(authSvc, cfg.CookieSecure).Routes(r, loginLimiter.Middleware, authenticate)
+			authhandler.New(authSvc, cfg.CookieSecure).Routes(r, limitLogin, authenticate)
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(authenticate, mw.TenantGuard(tenantSvc, opts.TenantCacheTTL), mw.RequirePasswordChanged)
@@ -112,4 +108,13 @@ func New(cfg config.Config, db DB, logger *slog.Logger, opts Options) (http.Hand
 		httpx.Error(w, r, apperr.New(apperr.KindInvalid, "metodo_no_permitido", "Método no permitido"))
 	})
 	return r, nil
+}
+
+// rateLimits devuelve los límites por IP del login y del resto del API.
+func rateLimits(disabled bool) (login, global func(http.Handler) http.Handler) {
+	if disabled {
+		passthrough := func(next http.Handler) http.Handler { return next }
+		return passthrough, passthrough
+	}
+	return mw.NewRateLimiter(10, 10).Middleware, mw.NewRateLimiter(300, 60).Middleware
 }

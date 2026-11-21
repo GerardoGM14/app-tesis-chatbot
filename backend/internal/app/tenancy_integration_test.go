@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/google/uuid"
@@ -178,7 +179,7 @@ func TestTenantLifecycle(t *testing.T) {
 	var found struct {
 		Items []tenantResp `json:"items"`
 	}
-	root.call(http.MethodGet, "/api/v1/empresas?q="+newName[:14], nil, &found)
+	root.call(http.MethodGet, "/api/v1/empresas?q="+url.QueryEscape(newName[:14]), nil, &found)
 	if len(found.Items) == 0 {
 		t.Error("la búsqueda por nombre debe encontrar la empresa")
 	}
