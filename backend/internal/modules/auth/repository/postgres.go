@@ -87,9 +87,10 @@ func (Postgres) RevokeFamily(ctx context.Context, q database.Querier, family uui
 	return err
 }
 
-// RevokeAllForUser cierra todas las sesiones de un usuario.
+// RevokeAllForUser cierra todas las sesiones de un usuario. Funciona con alcance
+// de plataforma y con el de la empresa del usuario; con otro alcance da error.
 func (Postgres) RevokeAllForUser(ctx context.Context, q database.Querier, userID uuid.UUID) error {
-	_, err := q.Exec(ctx, `UPDATE refresh_tokens SET revocado_en = now() WHERE usuario_id = $1 AND revocado_en IS NULL`, userID)
+	_, err := q.Exec(ctx, `SELECT revocar_sesiones_usuario($1)`, userID)
 	return err
 }
 

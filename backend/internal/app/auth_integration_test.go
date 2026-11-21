@@ -219,3 +219,38 @@ func TestPendingPasswordChangeBlocksBusinessRoutes(t *testing.T) { // AUT-12
 	status, code = admin.call(http.MethodGet, "/api/v1/usuarios", nil, nil)
 	expect(t, "ruta de negocio con cambio pendiente", status, code, http.StatusForbidden, "cambio_password_requerido")
 }
+
+func TestCompanyAdminActionsCloseSessions(t *testing.T) { // AUT-14
+	root := superadmin(t)
+	cases := []struct {
+		label string
+		act   func(t *testing.T, co company)
+	}{
+		{"restablecer contraseña", func(t *testing.T, co company) {
+			status, code := co.admin.call(http.MethodPost, "/api/v1/usuarios/"+co.agentID+"/restablecer", nil, nil)
+			expect(t, "restablecer", status, code, http.StatusOK, "")
+		}},
+		// Se reactiva antes de probar el refresh: así el rechazo se debe a la
+		// sesión revocada y no a que el usuario esté inactivo.
+		{"desactivar y reactivar", func(t *testing.T, co company) {
+			for _, active := range []bool{false, true} {
+				status, code := co.admin.call(http.MethodPatch, "/api/v1/usuarios/"+co.agentID, map[string]any{"activo": active}, nil)
+				expect(t, "cambiar estado", status, code, http.StatusOK, "")
+			}
+		}},
+		{"cambiar rol", func(t *testing.T, co company) {
+			status, code := co.admin.call(http.MethodPatch, "/api/v1/usuarios/"+co.agentID, map[string]any{"rol": "admin_empresa"}, nil)
+			expect(t, "cambiar rol", status, code, http.StatusOK, "")
+		}},
+	}
+	for _, c := range cases {
+		t.Run(c.label, func(t *testing.T) {
+			co := newCompany(t, root)
+			c.act(t, co)
+			status, code := co.agent.call(http.MethodPost, "/api/v1/auth/refresh", nil, nil)
+			expect(t, "refresh de la sesión anterior", status, code, http.StatusUnauthorized, "sesion_invalida")
+			status, code = co.admin.call(http.MethodPost, "/api/v1/auth/refresh", nil, nil)
+			expect(t, "la sesión del administrador sigue", status, code, http.StatusOK, "")
+		})
+	}
+}

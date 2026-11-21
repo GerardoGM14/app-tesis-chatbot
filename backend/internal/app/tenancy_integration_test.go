@@ -298,3 +298,37 @@ func TestSuperadminResetsCompanyAdmin(t *testing.T) {
 	status, code = co.agent.call(http.MethodPost, "/api/v1/usuarios/"+co.adminID+"/restablecer", nil, nil)
 	expect(t, "agente no restablece", status, code, http.StatusForbidden, "prohibido")
 }
+
+func TestSessionRevocationRespectsScope(t *testing.T) {
+	root := superadmin(t)
+	a, b := newCompany(t, root), newCompany(t, root)
+	ctx := context.Background()
+	scope := database.TenantScope(uuid.MustParse(a.tenant.ID))
+
+	// Desde el alcance de A no se pueden revocar sesiones de B.
+	err := env.db.InTx(ctx, scope, func(q database.Querier) error {
+		_, err := q.Exec(ctx, "SELECT revocar_sesiones_usuario($1)", b.agentID)
+		return err
+	})
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != "42501" {
+		t.Errorf("se esperaba permiso denegado (42501), se obtuvo %v", err)
+	}
+	status, code := b.agent.call(http.MethodPost, "/api/v1/auth/refresh", nil, nil)
+	expect(t, "la sesión de B sigue vigente", status, code, http.StatusOK, "")
+
+	// La empresa no puede leer los tokens, ni siquiera los propios.
+	err = env.db.InTx(ctx, scope, func(q database.Querier) error {
+		var n int
+		if err := q.QueryRow(ctx, "SELECT count(*) FROM refresh_tokens").Scan(&n); err != nil {
+			return err
+		}
+		if n != 0 {
+			t.Errorf("el alcance de empresa ve %d refresh tokens", n)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
