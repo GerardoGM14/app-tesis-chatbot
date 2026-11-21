@@ -6,15 +6,21 @@ import (
 	"context"
 	"net"
 	"net/http"
+
+	chimw "github.com/go-chi/chi/v5/middleware"
 )
 
 type ipKey struct{}
 
-// Middleware toma la IP de r.RemoteAddr. Si el servidor está detrás de un
-// proxy de confianza, chi/middleware.RealIP debe ir antes.
+// Middleware usa la IP que dejó un middleware ClientIPFrom* de chi (cuando hay un
+// proxy de confianza) y, si no hay ninguna, la de r.RemoteAddr.
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		next.ServeHTTP(w, r.WithContext(WithClientIP(r.Context(), hostOnly(r.RemoteAddr))))
+		ip := chimw.GetClientIP(r.Context())
+		if ip == "" {
+			ip = hostOnly(r.RemoteAddr)
+		}
+		next.ServeHTTP(w, r.WithContext(WithClientIP(r.Context(), ip)))
 	})
 }
 

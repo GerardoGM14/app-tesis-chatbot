@@ -75,7 +75,8 @@ func New(cfg config.Config, db DB, logger *slog.Logger, opts Options) (http.Hand
 
 	r := chi.NewRouter()
 	if cfg.TrustProxy {
-		r.Use(chimw.RealIP)
+		// Caddy es el único proxy: la IP del cliente es la última de X-Forwarded-For.
+		r.Use(chimw.ClientIPFromXFFTrustedProxies(1))
 	}
 	r.Use(chimw.RequestID, reqmeta.Middleware, mw.RequestLogger(logger), chimw.Recoverer, mw.SecureHeaders, limitGlobal)
 
