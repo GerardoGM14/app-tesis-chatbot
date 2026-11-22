@@ -13,3 +13,7 @@ paths = [
   '''\.env\.example$''',
   '''deploy/env\.example$''',
 ]
+# Alfabeto para generar contraseñas temporales: no es un secreto.
+regexes = [
+  '''ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789''',
+]
