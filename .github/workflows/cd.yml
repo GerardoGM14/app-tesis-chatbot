@@ -29,7 +29,9 @@ jobs:
       name: staging
       url: ${{ vars.STAGING_URL }}
     steps:
-      - uses: actions/checkout@v5
+      # El job exige un push a main (ver deploy-staging): nunca corre código de un fork.
+      # nosemgrep: yaml.github-actions.security.workflow-run-target-code-checkout.workflow-run-target-code-checkout
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
       - name: Acceso a GHCR
@@ -44,7 +46,9 @@ jobs:
     env:
       TARGET: ${{ vars.STAGING_URL }}
     steps:
-      - uses: actions/checkout@v5
+      # El job exige un push a main (ver deploy-staging): nunca corre código de un fork.
+      # nosemgrep: yaml.github-actions.security.workflow-run-target-code-checkout.workflow-run-target-code-checkout
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
       - name: Preparar carpeta de reportes
@@ -61,7 +65,7 @@ jobs:
           ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py
           -t /zap/api/openapi.yaml -f openapi -O "$TARGET/api/v1" -c /zap/config/rules.tsv
           -r api.html -J api.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: zap-report-${{ env.IMAGE_TAG }}
@@ -76,7 +80,9 @@ jobs:
       name: production
       url: ${{ vars.PRODUCTION_URL }}
     steps:
-      - uses: actions/checkout@v5
+      # El job exige un push a main (ver deploy-staging): nunca corre código de un fork.
+      # nosemgrep: yaml.github-actions.security.workflow-run-target-code-checkout.workflow-run-target-code-checkout
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
       - name: Acceso a GHCR
