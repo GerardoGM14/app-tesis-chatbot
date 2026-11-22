@@ -21,7 +21,7 @@ La arquitectura está documentada en [docs/](docs/README.md).
 | Herramienta | Versión |
 |---|---|
 | Go | 1.27 |
-| Node.js | 24 LTS (mínimo 22) |
+| Node.js | 24 LTS (mínimo 22.22.2) |
 | Docker + Compose | 27 o superior |
 | PostgreSQL | 17 (vía Docker) |
 

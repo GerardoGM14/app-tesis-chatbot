@@ -8,7 +8,12 @@ COPY . .
 RUN npm run build
 
 # nginx sin privilegios: escucha en 8080 con un usuario sin root.
-FROM nginxinc/nginx-unprivileged:stable-alpine
+FROM nginxinc/nginx-unprivileged:mainline-alpine AS runtime
+# Parches de seguridad de Alpine que la imagen base todavía no incluye.
+# CI no usa caché en esta etapa (no-cache-filters en ci.yml).
+USER root
+RUN apk upgrade --no-cache
+USER 101
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html
