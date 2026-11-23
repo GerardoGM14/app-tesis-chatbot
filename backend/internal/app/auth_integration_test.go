@@ -254,3 +254,21 @@ func TestCompanyAdminActionsCloseSessions(t *testing.T) { // AUT-14
 		})
 	}
 }
+
+func TestFinalCustomerHasNoAccess(t *testing.T) { // AUT-15
+	co := newCompany(t, superadmin(t))
+
+	// No existe un rol para el cliente final ni forma de asignarlo.
+	for _, role := range []string{"cliente", "contacto", ""} {
+		status, code := co.admin.call(http.MethodPost, "/api/v1/usuarios", map[string]string{
+			"nombre": "Cliente Final", "email": "cliente" + uniqueSuffix() + "@correo.test", "rol": role,
+		}, nil)
+		expect(t, "rol "+role, status, code, http.StatusUnprocessableEntity, "validacion")
+	}
+
+	// No hay registro público.
+	for _, path := range []string{"/api/v1/auth/register", "/api/v1/auth/registro"} {
+		status, code := newClient(t).call(http.MethodPost, path, map[string]string{"email": "cliente@correo.test"}, nil)
+		expect(t, path, status, code, http.StatusNotFound, "no_encontrado")
+	}
+}
