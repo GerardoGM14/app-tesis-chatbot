@@ -8,6 +8,16 @@
   páginas de Empresas y Usuarios, módulos pendientes con estado vacío. 57 pruebas, ~87 % de cobertura.
 - wa-service: solo esqueleto (health + rutas internas con HMAC que responden 501).
 - Docker, compose local y de VPS, Caddy, SonarQube, CI (`ci.yml`) y CD (`cd.yml`) con OWASP ZAP.
+- Corrección del 2026-11-23: un admin de empresa no cerraba las sesiones de sus trabajadores (RLS);
+  se resolvió con la función `revocar_sesiones_usuario` (migración 0002). CI corregido localmente;
+  falta confirmarlo en GitHub.
+
+## Pendientes técnicos
+
+- La firma HMAC de wa-service no cubre método ni ruta, y el tenant va en la ruta: corregir antes de
+  integrar whatsmeow.
+- `mensajes.wa_message_id` debe ser único por tenant, no global.
+- Casos AIS de `docs/04-calidad`: alinear con las pruebas (faltan 02, 08, 09 y 10; 03, 04 y 05 difieren).
 
 ## Siguientes sprints
 

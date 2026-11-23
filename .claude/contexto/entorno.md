@@ -10,6 +10,12 @@
   `ECONNREFUSED` en `/api` porque nada escucha en `localhost:8000`.
 - Para probar el sistema completo: una PC con Docker (`docker compose up --build`) o el staging del VPS.
 
+## PC personal (Windows)
+
+- Docker Desktop funciona: las pruebas de Go, golangci-lint, gitleaks, Semgrep y Trivy corren en
+  contenedores. No hay Go instalado.
+- Node 22.14 es muy antiguo para Vitest (jsdom pide 22.22.2 o superior): usar Node 24 o el contenedor `node:24`.
+
 ## Credenciales de prueba
 
 - Superadmin: el de `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD` del `.env` (pide cambiarla al entrar).
