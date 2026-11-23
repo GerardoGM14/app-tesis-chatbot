@@ -4,8 +4,8 @@ Bot basado en reglas: normaliza el texto, compara contra las palabras clave de c
 
 ```mermaid
 flowchart TB
-  S(["Mensaje entrante"]) --> E{"¿Conversación en estado<br/>DERIVADA o EN_ATENCION?"}
-  E -- "Sí" --> H["No responde el bot<br/>notifica al agente por SSE"] --> F(["Fin"])
+  S(["Mensaje del cliente final<br/>recibido por WhatsApp"]) --> E{"¿Conversación en estado<br/>DERIVADA o EN_ATENCION?"}
+  E -- "Sí" --> H["No responde el bot<br/>notifica al agente en el panel (SSE)"] --> F(["Fin"])
   E -- "No" --> W{"¿Es el primer mensaje?"}
   W -- "Sí" --> WB["Envía bienvenida y menú"] --> F
   W -- "No" --> N["Normaliza: minúsculas, sin tildes,<br/>sin signos, sin stopwords"]

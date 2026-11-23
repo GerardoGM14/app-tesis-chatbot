@@ -1,13 +1,13 @@
 # Flujo de inicio de sesión
 
-Diagrama de actividad del login completo, con bloqueo por intentos, cambio obligatorio de contraseña y redirección según el rol.
+Diagrama de actividad del login del personal con cuenta (el cliente final no inicia sesión), con bloqueo por intentos, cambio obligatorio de contraseña y redirección según el rol.
 
 ```mermaid
 ---
 title: "Flujo de inicio de sesión"
 ---
 flowchart TB
-  S(["Usuario abre /login"]) --> F["Ingresa email y contraseña"]
+  S(["El personal abre /login"]) --> F["Ingresa email y contraseña"]
   F --> V{"¿Formato válido?"}
   V -- "No" --> E1["Muestra error en el campo"] --> F
   V -- "Sí" --> RL{"¿Superó el rate limit<br/>de la IP?"}

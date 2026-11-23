@@ -4,13 +4,13 @@ Situación antes de la implementación (pretest, O₁). Toda consulta depende de
 
 ```mermaid
 flowchart LR
-  subgraph CLIENTE["Cliente"]
+  subgraph CLIENTE["Cliente final · su WhatsApp"]
     C1(["Envía consulta por WhatsApp"])
     C2["Espera respuesta"]
     C3(["Recibe respuesta"])
   end
 
-  subgraph PERSONAL["Personal de atención"]
+  subgraph PERSONAL["Trabajador de la empresa · WhatsApp de la empresa"]
     P1{"¿Está en horario<br/>laboral?"}
     P2["Mensaje queda sin leer<br/>hasta el día siguiente"]
     P3{"¿Está disponible?"}

@@ -1,16 +1,17 @@
 # Proceso de atención propuesto (TO-BE)
 
-Situación con la plataforma (postest, O₂). El bot responde las consultas frecuentes a cualquier hora y deriva solo lo que necesita una persona.
+Situación con la plataforma (postest, O₂). El bot responde las consultas frecuentes a cualquier hora y deriva solo lo que necesita una persona. Para el cliente final nada cambia: sigue usando su WhatsApp normal. Quien ingresa a la plataforma es el personal de la empresa.
 
 ```mermaid
 flowchart LR
-  subgraph CLIENTE["Cliente"]
+  subgraph CLIENTE["Cliente final · solo su WhatsApp"]
     C1(["Envía consulta por WhatsApp"])
     C2(["Recibe respuesta"])
+    C4(["Recibe respuesta<br/>del trabajador"])
     C3["Responde encuesta"]
   end
 
-  subgraph BOT["Chatbot"]
+  subgraph BOT["Plataforma · chatbot"]
     B1["Registra mensaje<br/>y hora de llegada"]
     B2{"¿Reconoce la<br/>intención?"}
     B3["Responde automáticamente"]
@@ -21,11 +22,12 @@ flowchart LR
     B8["Envía encuesta"]
   end
 
-  subgraph AGENTE["Agente"]
+  subgraph AGENTE["Trabajador de la empresa · panel web"]
     A1{"¿Hay agente<br/>en horario?"}
     A2["Queda en cola<br/>con aviso al cliente"]
     A3["Toma la conversación"]
-    A4["Atiende y marca resuelta"]
+    A4["Responde desde el panel"]
+    A5["Marca resuelta"]
   end
 
   C1 --> B1 --> B2
@@ -38,6 +40,7 @@ flowchart LR
   B6 -- "Sí" --> B7 --> A1
   A1 -- "No" --> A2 --> A3
   A1 -- "Sí" --> A3
-  A3 --> A4 --> B8
+  A3 --> A4 --> C4
+  A4 --> A5 --> B8
   B8 --> C3
 ```
