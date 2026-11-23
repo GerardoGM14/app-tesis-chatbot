@@ -1,6 +1,19 @@
 # Autenticación y roles
 
-Todo acceso al panel exige iniciar sesión. Los permisos se asignan por **rol** y se verifican en dos lugares: en el backend, que es la protección real, y en el frontend, que solo oculta lo que el usuario no puede usar.
+Todo acceso al panel exige iniciar sesión, y solo tiene cuenta el personal de las empresas y de Sertech.
+
+## Quién ingresa a la plataforma
+
+| Persona | ¿Tiene cuenta? | Cómo interactúa | Quién crea su cuenta |
+|---|:---:|---|---|
+| Cliente final | No | Desde su WhatsApp normal | No aplica |
+| Agente (trabajador de la empresa) | Sí | Panel: conversaciones y dashboard | El administrador de su empresa |
+| Administrador de empresa | Sí | Panel: bot, canal, usuarios, conversaciones y dashboard | El superadministrador o un administrador de su empresa |
+| Superadministrador (Sertech) | Sí | Panel: empresas y métricas globales | Se crea al preparar la base de datos |
+
+No existe registro público ni un rol para el cliente final. El sistema lo guarda como **contacto**, identificado por su teléfono y sin credenciales ([ADR-0004](../../adr/0004-cliente-final-solo-whatsapp.md)). En este documento, "usuario" siempre es una persona con cuenta.
+
+Los permisos se asignan por **rol** y se verifican en dos lugares: en el backend, que es la protección real, y en el frontend, que solo oculta lo que el usuario no puede usar.
 
 ## Modelo de control de acceso (RBAC)
 
@@ -11,14 +24,16 @@ Cada usuario tiene un único rol. Los permisos de cada rol están definidos en e
 title: "Modelo de control de acceso por roles"
 ---
 flowchart LR
-  subgraph USR["Usuario"]
+  CF["<b>Cliente final</b><br/>sin cuenta ni rol,<br/>solo WhatsApp"]
+
+  subgraph USR["Personal con cuenta"]
     U["<b>Usuario</b><br/>email, contraseña,<br/>tenant_id, rol"]
   end
 
   subgraph ROLES["Roles"]
     R1["<b>superadmin</b><br/>Sin tenant<br/>alcance: plataforma"]
-    R2["<b>admin_empresa</b><br/>Un tenant<br/>alcance: su empresa"]
-    R3["<b>agente</b><br/>Un tenant<br/>alcance: conversaciones"]
+    R2["<b>admin_empresa</b><br/>Administrador, un tenant<br/>alcance: su empresa"]
+    R3["<b>agente</b><br/>Trabajador, un tenant<br/>alcance: conversaciones"]
   end
 
   subgraph PERMS["Permisos"]
@@ -29,6 +44,7 @@ flowchart LR
     P5["<b>Atención</b><br/>conversaciones:atender"]
   end
 
+  CF ~~~ ROLES
   U -- "tiene un" --> ROLES
   R1 --> P1
   R1 --> P2
@@ -43,7 +59,9 @@ flowchart LR
   classDef entity fill:#1834BC,stroke:#1834BC,color:#FFFFFF
   classDef role fill:#EEF1FC,stroke:#1834BC,color:#0F1219
   classDef perm fill:#FFFFFF,stroke:#C9CDD6,color:#0F1219
+  classDef outside fill:#FFFFFF,stroke:#9AA0AC,color:#4B5263,stroke-dasharray:4 3
   class U entity
+  class CF outside
   class R1,R2,R3 role
   class P1,P2,P3,P4,P5 perm
   style USR fill:#F7F8FA,stroke:#C9CDD6,color:#0F1219
@@ -84,8 +102,8 @@ title: "Protección de rutas en dos capas"
 flowchart TB
   subgraph FE["Frontend · experiencia de usuario"]
     direction LR
-    F1["<b>ProtectedRoute</b><br/>¿Hay sesión?<br/>No: va a /login"]
-    F2["<b>RequireRole</b><br/>¿El rol tiene el permiso?<br/>No: página 403"]
+    F1["<b>RequireSession</b><br/>¿Hay sesión?<br/>No: va a /login"]
+    F2["<b>RequirePermission</b><br/>¿El rol tiene el permiso?<br/>No: página 403"]
     F3["<b>Sidebar</b><br/>Muestra solo los ítems<br/>permitidos"]
     F1 --> F2 --> F3
   end
@@ -123,7 +141,7 @@ Aunque alguien manipule el frontend para ver una pantalla que no le corresponde,
 | Intentos fallidos | 5 seguidos bloquean la cuenta 15 minutos |
 | Rate limit de login | 10 intentos por minuto por IP |
 | Primer ingreso o contraseña restablecida | Cambio obligatorio antes de usar el panel |
-| Cambio de contraseña o de rol | Revoca todas las sesiones del usuario |
+| Cambio de contraseña, de rol o de estado, y restablecimiento | Revoca todas las sesiones del usuario |
 | Mensajes de error | Siempre genéricos: no revelan si el email existe |
 | Auditoría | Login, logout, fallos, bloqueos y restablecimientos |
 

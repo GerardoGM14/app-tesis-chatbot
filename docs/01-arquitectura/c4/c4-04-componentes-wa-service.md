@@ -1,6 +1,6 @@
 # C4 · Nivel 3 — Componentes de wa-service
 
-wa-service es un gateway delgado: no contiene reglas de negocio del bot, solo mantiene las sesiones y traduce eventos de WhatsApp a llamadas HTTP internas.
+wa-service es un gateway delgado: no contiene reglas de negocio del bot, solo mantiene las sesiones y traduce eventos de WhatsApp a llamadas HTTP internas. Es el único punto por el que llegan los mensajes del cliente final.
 
 ```mermaid
 ---
@@ -12,7 +12,7 @@ flowchart LR
 
   subgraph WA["wa-service · [Contenedor: Go, whatsmeow]"]
     http["<b>API interna</b><br/><i>[Componente: net/http]</i><br/>connect, disconnect,<br/>status, send · HMAC"]
-    manager["<b>Gestor de sesiones</b><br/><i>[Componente]</i><br/>Un cliente por tenant,<br/>reconexión automática"]
+    manager["<b>Gestor de sesiones</b><br/><i>[Componente]</i><br/>Una conexión por tenant,<br/>reconexión automática"]
     handler["<b>Manejador de eventos</b><br/><i>[Componente]</i><br/>Message, Connected,<br/>LoggedOut, QR"]
     outbox["<b>Cola de reintentos</b><br/><i>[Componente: tabla outbox]</i><br/>Backoff si el backend<br/>no responde"]
     store["<b>Sqlstore</b><br/><i>[Componente: whatsmeow]</i><br/>Llaves y dispositivos"]

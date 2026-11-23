@@ -1,13 +1,15 @@
 # Diagrama de despliegue — VPS Linux
 
-Staging y producción corren en el mismo VPS como dos proyectos de Docker Compose separados, cada uno con su red y sus volúmenes. OWASP ZAP solo ataca staging.
+Staging y producción corren en el mismo VPS como dos proyectos de Docker Compose separados, cada uno con su red y sus volúmenes. OWASP ZAP solo ataca staging. El cliente final nunca se conecta al VPS: sus mensajes llegan por la sesión saliente que wa-service abre hacia WhatsApp.
 
 ```mermaid
 ---
 title: "C4 · Diagrama de despliegue"
 ---
 flowchart TB
-  internet(["<b>Usuarios</b><br/><i>[Internet]</i>"])
+  personal(["<b>Personal con cuenta</b><br/><i>[Navegador]</i><br/>Empresas y Sertech"])
+  cliente(["<b>Cliente final</b><br/><i>[Teléfono]</i><br/>Sin cuenta"])
+  whatsapp["<b>WhatsApp</b><br/><i>[Sistema externo]</i>"]
 
   subgraph GH["GitHub · [Nodo: SaaS]"]
     actions["<b>GitHub Actions</b><br/><i>[Runners hospedados]</i><br/>Lint, pruebas, SAST,<br/>build, Trivy"]
@@ -15,7 +17,7 @@ flowchart TB
   end
 
   subgraph VPS["VPS · [Nodo: Ubuntu 24.04 LTS, Docker Engine]"]
-    runner["<b>Runner self-hosted</b><br/><i>[systemd, usuario sin root]</i><br/>Despliega y ejecuta<br/>QA y OWASP"]
+    runner["<b>Runner self-hosted</b><br/><i>[systemd, usuario sin root]</i><br/>compose up en staging y,<br/>tras aprobación, en producción.<br/>Ejecuta QA y OWASP"]
     caddy["<b>Caddy</b><br/><i>[Puertos 80 y 443]</i><br/>TLS automático,<br/>enruta por dominio"]
 
     subgraph STG["Compose: staging · [Red stg_net]"]
@@ -31,9 +33,11 @@ flowchart TB
 
   actions -- "Publica imágenes" --> ghcr
   ghcr -- "Descarga imágenes" --> runner
-  runner -- "compose up" --> stg_app
-  runner -- "compose up<br/>tras aprobación" --> prod_app
-  internet -- "HTTPS" --> caddy
+  runner --> stg_app
+  runner --> prod_app
+  personal -- "HTTPS" --> caddy
+  cliente -- "Mensajes" --> whatsapp
+  whatsapp <-- "Sesión que abre<br/>wa-service" --> prod_app
   caddy -- "staging.dominio" --> stg_app
   caddy -- "app.dominio" --> prod_app
   stg_app --> stg_db
@@ -43,8 +47,10 @@ flowchart TB
   classDef external fill:#E4E6EB,stroke:#9AA0AC,color:#0F1219
   classDef person fill:#142A97,stroke:#142A97,color:#FFFFFF
   class runner,caddy,stg_app,stg_db,prod_app,prod_db infra
-  class actions,ghcr external
-  class internet person
+  classDef client fill:#FFFFFF,stroke:#142A97,color:#142A97
+  class actions,ghcr,whatsapp external
+  class personal person
+  class cliente client
   style GH fill:#FFFFFF,stroke:#9AA0AC,color:#0F1219
   style VPS fill:#F7F8FA,stroke:#1834BC,color:#0F1219
   style STG fill:#FFF3EC,stroke:#EB6B1D,stroke-dasharray:6 4,color:#0F1219

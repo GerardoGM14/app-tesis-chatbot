@@ -1,6 +1,6 @@
 # C4 · Nivel 3 — Capas del frontend
 
-El frontend usa arquitectura en capas. Cada capa solo depende de las que están debajo de ella.
+El frontend es el panel del personal con cuenta; el cliente final no lo usa. Sigue una arquitectura en capas. Cada capa solo depende de las que están debajo de ella.
 
 ```mermaid
 flowchart TB
@@ -52,7 +52,7 @@ flowchart TB
 frontend/src/
 ├── app/
 │   ├── router.tsx
-│   ├── guards/              # ProtectedRoute, RequireRole
+│   ├── guards.tsx           # RequireSession, RequirePermission
 │   ├── layout/              # AppShell, Sidebar, Breadcrumb, Topbar
 │   └── providers.tsx
 ├── presentation/
