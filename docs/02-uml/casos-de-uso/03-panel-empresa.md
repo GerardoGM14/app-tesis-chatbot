@@ -1,13 +1,13 @@
 # Casos de uso · Panel de la empresa
 
-Requieren sesión iniciada (CU05). Cada actor solo ve datos de su propia empresa.
+Los ejecutan la empresa (Admin de empresa) y sus trabajadores (Agente). Requieren sesión iniciada (CU05). Cada actor solo ve datos de su propia empresa.
 
 ```mermaid
 ---
 title: "Casos de uso · Panel de la empresa"
 ---
 flowchart LR
-  AG(("Agente"))
+  AG(("Agente<br/>(trabajador)"))
 
   subgraph SYS["Plataforma de atención multitenant"]
     UC09(["CU09 Atender conversación derivada"])
@@ -24,6 +24,8 @@ flowchart LR
   AG --- UC09
   AG --- UC10
   AG --- UC11
+  UC09 --- AD
+  UC10 --- AD
   UC11 --- AD
   UC12 --- AD
   UC13 --- AD

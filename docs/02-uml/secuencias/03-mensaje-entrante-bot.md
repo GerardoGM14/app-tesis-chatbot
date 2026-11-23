@@ -1,17 +1,17 @@
 # Secuencia — Mensaje entrante respondido por el bot
 
-Es el flujo principal del sistema. Los instantes `recibido_en` y `enviado_en` alimentan el indicador de tiempo promedio de respuesta (meta: 5 segundos o menos).
+Es el flujo principal del sistema. El cliente final solo ve su chat de WhatsApp; el panel lo usa el personal de la empresa. Los instantes `recibido_en` y `enviado_en` alimentan el indicador de tiempo promedio de respuesta (meta: 5 segundos o menos).
 
 ```mermaid
 sequenceDiagram
   autonumber
-  actor C as Cliente
+  actor C as Cliente final
   participant WA as WhatsApp
   participant G as wa-service
   participant A as Backend API
   participant B as Módulo bot
   participant D as PostgreSQL
-  participant P as Panel web
+  participant P as Panel del personal
 
   C->>WA: Escribe consulta
   WA->>G: Evento Message

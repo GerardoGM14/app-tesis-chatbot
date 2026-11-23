@@ -1,18 +1,20 @@
 # Secuencia — Inicio de sesión y renovación de token
 
+Aplica solo al personal con cuenta (agente, admin de empresa y superadmin). El cliente final no inicia sesión.
+
 El access token vive en memoria del frontend; el refresh token solo viaja en una cookie `httpOnly`. Si un refresh token ya usado se presenta de nuevo, se revoca toda la familia.
 
 ```mermaid
 sequenceDiagram
   autonumber
-  actor U as Usuario
+  actor U as Personal con cuenta
   participant W as Frontend
   participant A as Backend API
   participant D as PostgreSQL
 
   U->>W: Ingresa email y contraseña
   W->>A: POST /api/v1/auth/login
-  A->>A: Rate limit por IP y email
+  A->>A: Rate limit por IP
   A->>D: Buscar usuario por email
   D-->>A: Usuario con password_hash
   A->>A: Verificar con Argon2id
@@ -23,7 +25,7 @@ sequenceDiagram
   else Credenciales válidas
     A->>D: Guardar hash del refresh token y familia
     A-->>W: 200 access token + cookie refresh httpOnly
-    W-->>U: Redirige al dashboard
+    W-->>U: Redirige a la pantalla inicial de su rol
   end
 
   Note over W,A: 15 minutos después el access token expira

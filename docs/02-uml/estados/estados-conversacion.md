@@ -1,6 +1,6 @@
 # Diagrama de estados — Conversación
 
-Ciclo de vida de una conversación. El campo `resuelta_por` se fija al cerrar y alimenta el indicador de consultas atendidas automáticamente.
+Ciclo de vida de una conversación entre un contacto (cliente final, siempre por WhatsApp) y la empresa. El campo `resuelta_por` se fija al cerrar y alimenta el indicador de consultas atendidas automáticamente.
 
 ```mermaid
 stateDiagram-v2
@@ -26,6 +26,6 @@ stateDiagram-v2
 |---|---|---|
 | EN_BOT | Motor del bot | Tiempo de respuesta del bot |
 | DERIVADA | Cola de la empresa | Tiempo de espera hasta que un agente la toma |
-| EN_ATENCION | Agente | Tiempo de respuesta humana |
-| ESPERANDO_ENCUESTA | Contacto | Resolución y satisfacción |
+| EN_ATENCION | Agente o admin, desde el panel | Tiempo de respuesta humana |
+| ESPERANDO_ENCUESTA | Contacto, por WhatsApp | Resolución y satisfacción |
 | CERRADA | — | `resuelta_por`: bot, humano o sin_resolver |

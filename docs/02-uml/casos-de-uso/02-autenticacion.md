@@ -1,14 +1,14 @@
 # Casos de uso · Autenticación
 
-Todo usuario interno debe iniciar sesión para usar el panel. Agente, Admin de empresa y Superadmin son especializaciones de **Usuario interno** y heredan sus casos de uso.
+Solo el personal con cuenta inicia sesión en el panel: la empresa (Admin de empresa), sus trabajadores (Agente) y Sertech (Superadmin). Los tres son especializaciones de **Personal con cuenta** y heredan sus casos de uso. El cliente final no participa en esta vista porque solo usa WhatsApp.
 
 ```mermaid
 ---
 title: "Casos de uso · Autenticación"
 ---
 flowchart LR
-  UI(("Usuario<br/>interno"))
-  AG(("Agente"))
+  UI(("Personal<br/>con cuenta"))
+  AG(("Agente<br/>(trabajador)"))
   AD(("Admin de<br/>empresa"))
   SA(("Super<br/>admin"))
 
@@ -43,8 +43,8 @@ flowchart LR
 
 | Campo | Detalle |
 |---|---|
-| Actor | Usuario interno (Agente, Admin de empresa, Superadmin) |
-| Precondición | El usuario existe, está activo y su empresa no está suspendida |
+| Actor | Personal con cuenta (Agente, Admin de empresa, Superadmin) |
+| Precondición | Un administrador creó su cuenta, está activa y su empresa no está suspendida |
 | Flujo principal | 1. Ingresa email y contraseña. 2. El sistema valida las credenciales. 3. Emite la sesión. 4. Redirige a la pantalla inicial de su rol |
 | Flujo alterno A | Credenciales inválidas: mensaje genérico, suma un intento fallido |
 | Flujo alterno B | 5 intentos fallidos: cuenta bloqueada 15 minutos |

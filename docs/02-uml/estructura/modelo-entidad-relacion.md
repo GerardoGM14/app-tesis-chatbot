@@ -2,6 +2,8 @@
 
 Modelo físico en PostgreSQL. Todas las tablas con `tenant_id` tienen Row-Level Security activada con la política `tenant_id = current_setting('app.tenant_id')::uuid`.
 
+`usuarios` guarda solo al personal con cuenta. `contactos` guarda a los clientes finales, sin credenciales y sin relación con `usuarios`: se identifican por su teléfono dentro de cada empresa.
+
 ```mermaid
 erDiagram
   tenants ||--o{ usuarios : "tiene"
@@ -82,7 +84,7 @@ erDiagram
   contactos {
     uuid id PK
     uuid tenant_id FK
-    varchar telefono
+    varchar telefono "cliente final, único por tenant"
     varchar nombre
   }
   conversaciones {
@@ -103,7 +105,7 @@ erDiagram
     varchar direccion "entrante | saliente"
     varchar origen "contacto | bot | agente"
     text contenido
-    varchar wa_message_id UK
+    varchar wa_message_id "único por tenant"
     timestamptz recibido_en
     timestamptz enviado_en
   }

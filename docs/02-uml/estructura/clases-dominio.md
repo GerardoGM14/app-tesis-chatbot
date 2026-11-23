@@ -1,6 +1,6 @@
 # Diagrama de clases del dominio
 
-Entidades principales del backend y sus relaciones. Todas las entidades de negocio pertenecen a un `Tenant`.
+Entidades principales del backend y sus relaciones. Todas las entidades de negocio pertenecen a un `Tenant`. `Usuario` es una persona con cuenta en el panel; `Contacto` es el cliente final, que no tiene cuenta y solo escribe por WhatsApp.
 
 ```mermaid
 classDiagram
@@ -140,6 +140,8 @@ classDiagram
   Usuario "0..1" --> "*" Conversacion : atiende
   Mensaje "*" --> "0..1" Intencion : detectada
   Usuario ..> Rol
+  note for Usuario "Personal con cuenta:<br/>ingresa al panel"
+  note for Contacto "Cliente final: sin cuenta,<br/>solo WhatsApp"
   Conversacion ..> EstadoConversacion
   Conversacion ..> ResueltaPor
 ```
