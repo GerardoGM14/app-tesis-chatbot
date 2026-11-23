@@ -23,6 +23,13 @@ Estas decisiones ya están acordadas con el usuario. Se registran como ADR en `d
 - Cada transacción fija el alcance con `set_config('app.tenant_id', ..., true)` y `app.is_platform`.
 - El tenant sale siempre del JWT, nunca del cuerpo ni de la URL.
 
+## Quién ingresa a la plataforma (ADR-0004)
+
+- El **cliente final no ingresa ni tiene cuenta**: usa su WhatsApp normal. Se guarda como contacto.
+- Ingresan al panel: la empresa (`admin_empresa`), sus trabajadores (`agente`) y Sertech (`superadmin`).
+- Sin registro público. En diagramas y textos: "cliente final" vs. "personal con cuenta"; no decir
+  "usuario" para referirse al cliente.
+
 ## Autenticación y roles
 
 - Roles: `superadmin` (plataforma, sin tenant), `admin_empresa`, `agente`. Matriz de permisos en

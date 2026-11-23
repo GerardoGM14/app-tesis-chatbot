@@ -85,6 +85,7 @@ docs/
 - [ADR-0001 · Backend en Go como monolito modular](adr/0001-backend-go-monolito-modular.md)
 - [ADR-0002 · Multitenancy con modelo Pool y RLS](adr/0002-multitenancy-rls.md)
 - [ADR-0003 · Servicio de WhatsApp separado](adr/0003-wa-service-separado.md)
+- [ADR-0004 · El cliente final solo usa WhatsApp](adr/0004-cliente-final-solo-whatsapp.md)
 
 ## Exportar diagramas
 

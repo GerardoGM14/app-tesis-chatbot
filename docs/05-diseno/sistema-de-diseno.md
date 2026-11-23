@@ -1,6 +1,6 @@
 # Sistema de diseño
 
-Reglas visuales del panel. El objetivo es un diseño sobrio y ordenado que se reconozca como de Sertech.
+Reglas visuales del panel, que usa solo el personal con cuenta. El objetivo es un diseño sobrio y ordenado que se reconozca como de Sertech.
 
 ## Principios
 

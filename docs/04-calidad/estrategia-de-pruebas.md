@@ -64,6 +64,8 @@ Cada caso se ejecuta con un token del tenant A contra recursos del tenant B. El 
 | AUT-11 | Superadmin lee conversaciones de una empresa | 403 |
 | AUT-12 | Primer ingreso | Solo permite cambiar la contraseña hasta hacerlo |
 | AUT-13 | Cambio de contraseña | Revoca las demás sesiones |
+| AUT-14 | El admin restablece la contraseña, desactiva o cambia el rol de un trabajador | Revoca las sesiones de ese usuario |
+| AUT-15 | Crear una cuenta para un cliente final o registrarse por cuenta propia | 422 (no existe el rol) y 404 (no hay registro público) |
 
 ## Quality gate de SonarQube
 
